@@ -44,6 +44,7 @@ generates will point clients at `localhost`.
 | `SWAG_TZ` | `Etc/UTC` | `.env` | Time zone for the SWAG container. |
 | `SWAG_CONFIG_DIR` | `./swag-config` | `.env` | SWAG's persistent config: certificates, nginx config, and the Cloudflare token. |
 | `SWAG_MEM_LIMIT` | `512m` | `.env` | Memory cap for the SWAG container. Raise it if SWAG also serves other apps. |
+| `SWAG_VERSION` | `5.8.0-ls486` | `.env` | SWAG image tag. See [Updating](#updating). |
 
 If `TRACKER_URL` contains `"`, `$`, `\` or `#`, or `TRACKER_INTERVAL` isn't a whole number, the
 container refuses to start. Run `docker compose logs ipmagnet` to see why.
@@ -188,6 +189,10 @@ docker compose up -d --build
 
 The app's code is built into the image, so restarting without `--build` keeps running the old
 version. Your `.env` and override file aren't touched by `git pull`.
+
+SWAG is pinned to a tested release, so it only changes when this repository moves the pin (picked up
+by the commands above) or when you set `SWAG_VERSION` in `.env` to a tag from
+[SWAG's releases](https://github.com/linuxserver/docker-swag/releases) and run `docker compose up -d`.
 
 ## Data and backups
 

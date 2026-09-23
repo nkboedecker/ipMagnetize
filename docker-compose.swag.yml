@@ -10,7 +10,9 @@ services:
       TRUST_PROXY: "true"
 
   swag:
-    image: lscr.io/linuxserver/swag:latest
+    # Pinned so a new SWAG release doesn't replace nginx without you choosing
+    # it. See "Updating" in README.md for moving to a newer tag.
+    image: lscr.io/linuxserver/swag:${SWAG_VERSION:-5.8.0-ls486}
     cap_add:
       - NET_ADMIN
     environment:
