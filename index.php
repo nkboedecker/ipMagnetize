@@ -20,7 +20,7 @@
 	//peer is itself trusted (private/local), so an untrusted client can't spoof this header
 	//by talking to ipMagnet directly
 	$REMOTE_ADDR = $_SERVER["REMOTE_ADDR"];
-	if(is_trusted_proxy($REMOTE_ADDR) && !empty($_SERVER["HTTP_X_REAL_IP"])){
+	if(is_trusted_proxy($REMOTE_ADDR) && filter_var($_SERVER["HTTP_X_REAL_IP"] ?? "", FILTER_VALIDATE_IP) !== FALSE){
 		$REMOTE_ADDR = $_SERVER["HTTP_X_REAL_IP"];
 	}
 
