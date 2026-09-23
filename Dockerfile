@@ -1,5 +1,9 @@
 FROM php:8.2-apache
 
+# Without a php.ini, PHP's built-in default is display_errors=On, which prints
+# warnings into responses (corrupting bencoded tracker replies)
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+
 # pdo_sqlite is required by index.php; the sqlite3 CLI is used by docker-entrypoint.sh
 RUN apt-get update \
 	&& apt-get install -y --no-install-recommends libsqlite3-dev sqlite3 \
