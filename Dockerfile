@@ -20,7 +20,9 @@ COPY docker-entrypoint.sh /usr/local/bin/
 RUN mkdir -p /var/www/data \
 	&& sed -i 's#sqlite:ipmagnet.db3#sqlite:/var/www/data/ipmagnet.db3#' index.php \
 	&& chmod +x /usr/local/bin/docker-entrypoint.sh \
-	&& chown -R www-data:www-data /var/www/html /var/www/data
+	&& chown root:root /var/www/html \
+	&& chmod 755 /var/www/html \
+	&& chown www-data:www-data /var/www/data
 
 VOLUME ["/var/www/data"]
 
