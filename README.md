@@ -184,11 +184,14 @@ fake entries to it. That differs from upstream's reverse-proxy advice, which doe
 
 ```bash
 git pull
-docker compose up -d --build
+docker compose build --pull
+docker compose up -d
 ```
 
-The app's code is built into the image, so restarting without `--build` keeps running the old
-version. Your `.env` and override file aren't touched by `git pull`.
+The app's code is built into the image, so restarting without rebuilding keeps running the old
+version. `--pull` also fetches the newest `php:8.4-apache` base image, which is how PHP and Debian
+security fixes reach the container, so run these regularly even when there's nothing to pull from
+git. Your `.env` and override file aren't touched by `git pull`.
 
 SWAG is pinned to a tested release, so it only changes when this repository moves the pin (picked up
 by the commands above) or when you set `SWAG_VERSION` in `.env` to a tag from
