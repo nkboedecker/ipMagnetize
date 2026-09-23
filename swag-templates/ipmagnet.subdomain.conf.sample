@@ -1,0 +1,23 @@
+# make sure that your ipmagnet container is named ipmagnet (the default
+# service name in docker-compose.yml) and that your DNS has an A/AAAA (or
+# CNAME) record for ipmagnet.<yourdomain>
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name ipmagnet.*;
+
+    include /config/nginx/ssl.conf;
+
+    client_max_body_size 0;
+
+    location / {
+        include /config/nginx/proxy.conf;
+        include /config/nginx/resolver.conf;
+        set $upstream_app ipmagnet;
+        set $upstream_port 80;
+        set $upstream_proto http;
+        proxy_pass $upstream_proto://$upstream_app:$upstream_port;
+    }
+}

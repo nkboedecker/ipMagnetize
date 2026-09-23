@@ -1,0 +1,37 @@
+### Optional reverse-proxy overlay: adds linuxserver/swag (nginx + Let's Encrypt
+### via the Cloudflare DNS-01 challenge) in front of ipmagnet, and removes
+### ipmagnet's own public port so only swag is exposed.
+###
+### Usage:
+###   docker compose -f docker-compose.yml -f docker-compose.swag.yml up -d
+###
+### Requires a Cloudflare API token (Zone:DNS:Edit + Zone:Zone:Read, scoped to
+### your zone) saved at $SWAG_CONFIG_DIR/dns-conf/cloudflare.ini as:
+###   dns_cloudflare_api_token = <token>
+### (chmod 600). Set SWAG_CONFIG_DIR, SWAG_URL and SWAG_EMAIL below or via a
+### .env file before starting.
+
+services:
+  swag:
+    image: lscr.io/linuxserver/swag:latest
+    container_name: swag
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${SWAG_TZ:-Etc/UTC}
+      - URL=${SWAG_URL}
+      - SUBDOMAINS=ipmagnet
+      - ONLY_SUBDOMAINS=true
+      - VALIDATION=dns
+      - DNSPLUGIN=cloudflare
+      - EMAIL=${SWAG_EMAIL}
+    volumes:
+      - ${SWAG_CONFIG_DIR:-./swag-config}:/config
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: unless-stopped
+    depends_on:
+      - ipmagnet

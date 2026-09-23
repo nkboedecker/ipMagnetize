@@ -115,6 +115,45 @@ docker build -t ipmagnet .
 docker run -d -p 80:80 -e TRACKER_URL="http://localhost/" -v ipmagnet-data:/var/www/data ipmagnet
 ```
 
+### Optional: TLS via SWAG (reverse proxy)
+
+`docker-compose.swag.yml` is an overlay that puts [linuxserver/swag](https://github.com/linuxserver/docker-swag)
+(nginx + automatic Let's Encrypt certificates) in front of ipMagnet and removes ipMagnet's own
+public port, so only swag is exposed on 80/443. It uses the Cloudflare DNS-01 challenge, so it
+works even if the host isn't reachable on 80/443 during issuance and doesn't require pointing the
+apex domain anywhere.
+
+1. Create a Cloudflare API token scoped to your zone with **Zone:DNS:Edit** and **Zone:Zone:Read**
+   permissions only.
+2. Save it at `<SWAG_CONFIG_DIR>/dns-conf/cloudflare.ini` (default `./swag-config/dns-conf/cloudflare.ini`)
+   as:
+   ```
+   dns_cloudflare_api_token = <token>
+   ```
+   and `chmod 600` it. Never commit this file.
+3. Set `SWAG_URL` (your registered domain, e.g. `example.com`) and `SWAG_EMAIL` (for Let's Encrypt
+   registration). Also set `IPMAGNET_BIND=127.0.0.1` and `IPMAGNET_PORT` to an unused local port
+   (e.g. `8081`) so ipMagnet's own port isn't publicly reachable alongside swag's - Compose merges
+   `ports` additively across `-f` files rather than letting an overlay replace it, so this can't be
+   done from `docker-compose.swag.yml` itself. Then start both files together, including any
+   deployment-specific override:
+   ```
+   docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.swag.yml up -d
+   ```
+4. Two ready-made proxy configs are provided in `swag-templates/`, matching linuxserver's own
+   per-app sample convention - pick one (or both) and copy it into swag's persistent config volume,
+   dropping the `.sample` suffix so nginx picks it up, then reload: `docker exec swag nginx -s reload`.
+
+   * **Subdomain method** (`ipmagnet.subdomain.conf.sample` → `nginx/proxy-confs/ipmagnet.subdomain.conf`) -
+     serves ipMagnet at `https://ipmagnet.<yourdomain>/`, as its own vhost. This is what the DNS
+     record and Cloudflare token above are for, and needs no other changes.
+   * **Subfolder method** (`ipmagnet.subfolder.conf.sample` → `nginx/proxy-confs/ipmagnet.subfolder.conf`) -
+     serves ipMagnet at `https://<yourdomain>/ipmagnet/`, under swag's default site instead of a
+     dedicated subdomain. Since that default site answers for whatever hostname(s) `URL`/
+     `EXTRA_DOMAINS` cover, only use this if you actually want ipMagnet exposed under your bare
+     apex domain (which may already be serving something else there) - and if `ONLY_SUBDOMAINS=true`,
+     the cert won't cover the apex at all, so you'd need to unset that or add it via `EXTRA_DOMAINS`.
+
 ### Deployment behind a reverse proxy
 
 Deploying ipMagnet behind a reverse proxy is possible, but it is very much an advanced use-case. To do so, make sure that the front-end server

@@ -2,7 +2,11 @@ services:
   ipmagnet:
     build: .
     ports:
-      - "80:80"
+      # Override with IPMAGNET_BIND/IPMAGNET_PORT (e.g. via .env) to restrict
+      # this to loopback when fronting it with a reverse proxy - see
+      # docker-compose.swag.yml. Compose merges `ports` additively across -f
+      # files rather than replacing it, so it can't be overridden there.
+      - "${IPMAGNET_BIND:-0.0.0.0}:${IPMAGNET_PORT:-80}:80"
     environment:
       # Public URL of this instance, must include the trailing slash.
       TRACKER_URL: "http://localhost/"
