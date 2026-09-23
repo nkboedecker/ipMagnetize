@@ -10,6 +10,20 @@
 		return preg_match('/^[A-Fa-f0-9]{40}$/', $string);
 	}
 
+	//true if $ip is a private/loopback/reserved address, i.e. plausibly our own reverse proxy
+	function is_trusted_proxy($ip){
+		return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === FALSE;
+	}
+
+	//when running behind a reverse proxy (e.g. the bundled SWAG setup), REMOTE_ADDR is the
+	//proxy's own address; use the client IP it forwarded instead, but only if the connecting
+	//peer is itself trusted (private/local), so an untrusted client can't spoof this header
+	//by talking to ipMagnet directly
+	$REMOTE_ADDR = $_SERVER["REMOTE_ADDR"];
+	if(is_trusted_proxy($REMOTE_ADDR) && !empty($_SERVER["HTTP_X_REAL_IP"])){
+		$REMOTE_ADDR = $_SERVER["HTTP_X_REAL_IP"];
+	}
+
 	//BitTorrent clients will submit the info_hash parameter when requesting the magnet link
 	if(isset($_GET["info_hash"])){
 
@@ -22,14 +36,14 @@
 		}
 
 		//gather all supplied ip addresses
-		$addrs=htmlentities($_SERVER["REMOTE_ADDR"], ENT_QUOTES);
-		if(isset($_GET["ipv4"])&&$_GET["ipv4"]!=$_SERVER["REMOTE_ADDR"]){
+		$addrs=htmlentities($REMOTE_ADDR, ENT_QUOTES);
+		if(isset($_GET["ipv4"])&&$_GET["ipv4"]!=$REMOTE_ADDR){
 			$addrs.=", ".htmlentities($_GET["ipv4"], ENT_QUOTES);
 		}
-		if(isset($_GET["ipv6"])&&$_GET["ipv6"]!=$_SERVER["REMOTE_ADDR"]){
+		if(isset($_GET["ipv6"])&&$_GET["ipv6"]!=$REMOTE_ADDR){
 			$addrs.=", ".htmlentities($_GET["ipv6"], ENT_QUOTES);
 		}
-		if(isset($_GET["ip"])&&$_GET["ip"]!=$_SERVER["REMOTE_ADDR"]){
+		if(isset($_GET["ip"])&&$_GET["ip"]!=$REMOTE_ADDR){
 			$addrs.=", ".htmlentities($_GET["ip"], ENT_QUOTES);
 		}
 
@@ -148,7 +162,7 @@
 				</div>
 				Add this <a href="magnet:?xt=urn:btih:<?php print($HASH); ?>&amp;dn=ipMagnet+Tracking+Link&amp;tr=<?php print($TRACKER); ?>">Magnet link</a> to your 
 				downloads and watch this page.<br/>
-				FYI, the address you've accessed this page with is <span id="remote-ip"><?php print($_SERVER["REMOTE_ADDR"]); ?></span>
+				FYI, the address you've accessed this page with is <span id="remote-ip"><?php print(htmlentities($REMOTE_ADDR, ENT_QUOTES)); ?></span>
 				<div id="current-connections">
 					<div id="app-links">
 						<a href="?hash=<?php print($HASH); ?>" class="app-link" id="update-link">Update</a>
