@@ -2,3 +2,7 @@
 .gitignore
 ipmagnet.db3
 TODO
+.env
+*.env
+docker-compose.override.yml
+swag-config/
