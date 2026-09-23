@@ -81,6 +81,11 @@ var ipmagnet={
 		return row;
 	},
 
+	//hits are stored HTML-escaped; decode them so textContent shows the original text
+	decodeEntities:function(str){
+		return new DOMParser().parseFromString(str, "text/html").documentElement.textContent;
+	},
+
 	//format a javascript date object to a sensible string representation
 	formatDate:function(date){
 		var datePart = ipmagnet.pad(date.getDate(), '0', 2) + "." + ipmagnet.pad(date.getMonth() + 1, '0', 2) + "." + date.getFullYear();
@@ -113,7 +118,7 @@ var ipmagnet={
 				if(response.hits){
 					response.hits.forEach(function(hit){
 						var timestamp=new Date(parseInt(hit.timestamp)*1000);
-						hitsTable.appendChild(ipmagnet.buildRow([ipmagnet.formatDate(timestamp), hit.addr, hit.agent]));
+						hitsTable.appendChild(ipmagnet.buildRow([ipmagnet.formatDate(timestamp), ipmagnet.decodeEntities(hit.addr), ipmagnet.decodeEntities(hit.agent)]));
 					});
 				}
 			}
