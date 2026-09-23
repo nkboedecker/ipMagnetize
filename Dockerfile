@@ -1,8 +1,10 @@
 FROM php:8.4-apache
 
 # Without a php.ini, PHP's built-in default is display_errors=On, which prints
-# warnings into responses (corrupting bencoded tracker replies)
-RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
+# warnings into responses (corrupting bencoded tracker replies). expose_php=Off
+# drops the X-Powered-By header that advertises the exact PHP version.
+RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" \
+	&& sed -i 's/^expose_php = On/expose_php = Off/' "$PHP_INI_DIR/php.ini"
 
 # pdo_sqlite is compiled into the base image; the sqlite3 CLI is for docker-entrypoint.sh
 RUN apt-get update \
