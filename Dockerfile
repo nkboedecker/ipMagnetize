@@ -4,11 +4,10 @@ FROM php:8.4-apache
 # warnings into responses (corrupting bencoded tracker replies)
 RUN mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
-# pdo_sqlite is required by index.php; the sqlite3 CLI is used by docker-entrypoint.sh
+# pdo_sqlite is compiled into the base image; the sqlite3 CLI is for docker-entrypoint.sh
 RUN apt-get update \
-	&& apt-get install -y --no-install-recommends libsqlite3-dev sqlite3 \
-	&& rm -rf /var/lib/apt/lists/* \
-	&& docker-php-ext-install pdo_sqlite
+	&& apt-get install -y --no-install-recommends sqlite3 \
+	&& rm -rf /var/lib/apt/lists/*
 
 # Allow .htaccess (e.g. sample.htaccess installed as .htaccess) to take effect
 RUN a2enmod rewrite \
