@@ -1,4 +1,4 @@
-FROM php:8.2-apache
+FROM php:8.4-apache
 
 # Without a php.ini, PHP's built-in default is display_errors=On, which prints
 # warnings into responses (corrupting bencoded tracker replies)
