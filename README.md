@@ -165,6 +165,12 @@ Pick one. `TRACKER_URL` can only point at one of them.
   in `docker-compose.swag.yml`, and point the bare domain's DNS at this host. That moves anything
   currently served there. Set `TRACKER_URL` to `https://<your domain>/ipmagnet/`.
 
+With a subdomain, SWAG's default site still answers requests for the host's bare IP, or any other
+hostname, with a placeholder page. To close those connections without a reply, add `return 444;`
+inside the `listen 443 ssl default_server` block of `swag-config/nginx/site-confs/default.conf` and
+reload nginx. Skip this if you use the subfolder setup, or anything else on this SWAG uses subfolder
+configs: they're served from that default site.
+
 ## Behind another reverse proxy
 
 Set `TRUST_PROXY=true` only if ipMagnet can be reached **solely** through your proxy. The proxy must
