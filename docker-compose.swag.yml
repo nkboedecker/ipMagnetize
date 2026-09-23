@@ -25,12 +25,12 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=${SWAG_TZ:-Etc/UTC}
-      - URL=${SWAG_URL}
+      - URL=${SWAG_URL:?set SWAG_URL to your domain, e.g. in .env}
       - SUBDOMAINS=ipmagnet
       - ONLY_SUBDOMAINS=true
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare
-      - EMAIL=${SWAG_EMAIL}
+      - EMAIL=${SWAG_EMAIL:?set SWAG_EMAIL for Let's Encrypt, e.g. in .env}
     volumes:
       - ${SWAG_CONFIG_DIR:-./swag-config}:/config
     ports:
