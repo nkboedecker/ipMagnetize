@@ -1,22 +1,21 @@
 # make sure that your ipmagnet container is named ipmagnet (the default
 # service name in docker-compose.yml)
 #
-# ipMagnet's own links (magnet tracker URL, static assets, hash redirects)
-# are all relative, so no app-side base-URL configuration is needed - nginx
-# just strips the /ipmagnet/ prefix before forwarding to the container.
-#
-# NOTE: unlike the subdomain method, this serves ipMagnet under whatever
-# domain swag's default site (site-confs/default.conf) answers for - by
-# default that's every hostname that reaches swag without a more specific
-# server_name match. If SWAG's URL/EXTRA_DOMAINS is set to your bare apex
-# domain, this exposes ipMagnet at https://<yourdomain>/ipmagnet/ alongside
-# anything else already served from that same domain/vhost.
+# ipMagnet's links are all relative, so it needs no base-URL setting; the
+# /ipmagnet prefix is stripped before requests are forwarded.
 
-location /ipmagnet/ {
+location = /ipmagnet {
+    return 301 /ipmagnet/;
+}
+
+# ^~ so swag's default "location ~ \.php" doesn't capture /ipmagnet/index.php
+location ^~ /ipmagnet/ {
     include /config/nginx/proxy.conf;
     include /config/nginx/resolver.conf;
     set $upstream_app ipmagnet;
     set $upstream_port 80;
     set $upstream_proto http;
-    proxy_pass $upstream_proto://$upstream_app:$upstream_port/;
+    # proxy_pass with variables doesn't strip the location prefix itself
+    rewrite ^/ipmagnet(/.*)$ $1 break;
+    proxy_pass $upstream_proto://$upstream_app:$upstream_port;
 }
