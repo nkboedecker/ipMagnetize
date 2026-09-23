@@ -141,7 +141,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
-		<title>ipMagnet</title>
+		<title>ipMagnetize</title>
 		<link rel="icon" href="static/favicon.png" type="image/x-icon" />
 		<link rel="stylesheet" type="text/css" href="static/ipmagnet.css" />
 		<script type="text/javascript" src="static/ajax.js"></script>
@@ -153,12 +153,12 @@
 	</head>
 	<body onload="ipmagnet.init('<?php print($HASH); ?>');">
 		<div id="title-wrap">
-			<h1>ipMagnet</h1>
+			<h1>ipMagnetize</h1>
 		</div>
 		<div id="center-wrap">
 			<div id="content-main">
 				<div id="mission-statement">
-					ipMagnet allows you to see which IP address your BitTorrent Client is handing out to its peers and trackers!
+					ipMagnetize allows you to see which IP address your BitTorrent Client is handing out to its peers and trackers!
 				</div>
 				Add this <a href="magnet:?xt=urn:btih:<?php print($HASH); ?>&amp;dn=ipMagnet+Tracking+Link&amp;tr=<?php print($TRACKER); ?>">Magnet link</a> to your 
 				downloads and watch this page.<br/>
@@ -194,7 +194,7 @@
 			<span id="status-line">Status: <span id="status-text">Using plain HTML</span></span>
 				<span id="meta-footer">
 					Proudly run without ads or web tracking. Set up your own with the
-					<a href="https://github.com/cbdevnet/ipmagnet">[source]</a>
+					<a href="https://github.com/nkboedecker/ipMagnetize">[source]</a>
 					<a href="http://www.kopimi.com/kopimi/"><img src="static/kopimi.png" alt="kopimi"/></a>
 					<a href="http://wtfpl.net/"><img src="static/wtfpl.png" alt="wtfpl"/></a>
 				</span>
