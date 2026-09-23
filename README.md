@@ -180,6 +180,19 @@ ipMagnet uses the header only when all of these hold:
 Otherwise it logs the connecting address. `X-Forwarded-For` is ignored, because clients can prepend
 fake entries to it. That differs from upstream's reverse-proxy advice, which doesn't apply to this fork.
 
+## Firewalls
+
+Host firewalls such as UFW and firewalld don't filter ports that Docker publishes. Docker inserts its
+own iptables rules ahead of theirs, so `ufw status` can list only SSH while ipMagnet's port 80, or
+SWAG's 80 and 443, are open to the internet. To restrict them, either:
+
+* Use a firewall in front of the host, such as a DigitalOcean Cloud Firewall or an AWS security group.
+  Docker can't bypass it.
+* Add rules to Docker's `DOCKER-USER` iptables chain, which Docker checks before its own rules.
+
+With the SWAG setup, `IPMAGNET_BIND=127.0.0.1` keeps ipMagnet's own port off the network whatever
+the firewall rules are.
+
 ## Updating
 
 ```bash
