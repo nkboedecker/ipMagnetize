@@ -1,82 +1,198 @@
 ipMagnetize
 ===========
 
-This is a fork of [ipMagnet](https://github.com/cbdevnet/ipmagnet) - see the upstream repository
-for what the project does, requirements, and manual (non-Docker) setup instructions.
+ipMagnetize is a fork of [ipMagnet](https://github.com/cbdevnet/ipmagnet), which shows which IP
+addresses your BitTorrent client hands out to trackers. See upstream for what the app does, its
+privacy notes, and manual (non-Docker) setup. The app itself still calls itself ipMagnet.
 
-This fork adds Docker packaging and an optional TLS reverse-proxy setup. The notes below cover
-only what's specific to this fork; everything else (behavior, database schema, privacy notes,
-timeout/interval feature, basic auth) is documented upstream.
+This fork adds:
 
-## Running in Docker
+* A Docker image configured through environment variables.
+* An optional HTTPS setup using [SWAG](https://github.com/linuxserver/docker-swag) with Let's Encrypt
+  certificates.
+* Correct client IP detection behind a reverse proxy (`TRUST_PROXY`).
 
-A `Dockerfile` and `docker-compose.yml` are provided. The image is based on `php:8.2-apache` with the
-`pdo_sqlite` extension enabled, and stores the SQLite database outside the web root at `/var/www/data`
-so it can't be downloaded and so it persists across container recreation.
+## Quick start
 
-Quick start:
+From a checkout of this repository:
 
-```
+```bash
 docker compose up -d --build
 ```
 
-This starts ipMagnet on http://localhost/, with the database persisted in the `ipmagnet-data`
-volume. Edit `TRACKER_URL` in `docker-compose.yml` to the public URL clients will use before deploying,
-including the trailing slash.
+ipMagnet is now on http://localhost/. Before exposing it publicly, set `TRACKER_URL` to the address
+BitTorrent clients will reach it at (see [Configuration](#configuration)), or the magnet links it
+generates will point clients at `localhost`.
 
-Environment variables (applied at container start, no rebuild needed):
+## Configuration
 
-* `TRACKER_URL` - the public tracker URL embedded in generated magnet links (equivalent to editing line 2 of `index.php` upstream).
-* `ENABLE_INTERVAL` - set to `true` to enable the tracker interval feature (see upstream warning about this).
-* `TRACKER_INTERVAL` - the interval in seconds, if enabled.
+### Settings
 
-Without Compose:
+| Variable | Default | Set in | Purpose |
+|---|---|---|---|
+| `TRACKER_URL` | `http://localhost/` | override file | Public URL of this instance, with trailing slash. Embedded in magnet links as the tracker. |
+| `ENABLE_INTERVAL` | `false` | override file | Ask clients to re-announce periodically. Read upstream's warning before enabling. |
+| `TRACKER_INTERVAL` | `300` | override file | Re-announce interval in seconds, if enabled. |
+| `TRUST_PROXY` | `false` | override file | Take the client IP from a reverse proxy's `X-Real-IP` header. The SWAG overlay sets this to `true`. See [Behind another reverse proxy](#behind-another-reverse-proxy). |
+| `IPMAGNET_BIND` | `0.0.0.0` | `.env` | Host address ipMagnet's port is published on. |
+| `IPMAGNET_PORT` | `80` | `.env` | Host port ipMagnet is published on. |
+| `SWAG_URL` | *(required for SWAG)* | `.env` | Your registered domain, e.g. `example.com`. |
+| `SWAG_EMAIL` | *(required for SWAG)* | `.env` | Contact address for Let's Encrypt. |
+| `SWAG_TZ` | `Etc/UTC` | `.env` | Time zone for the SWAG container. |
+| `SWAG_CONFIG_DIR` | `./swag-config` | `.env` | SWAG's persistent config: certificates, nginx config, and the Cloudflare token. |
 
-```
+If `TRACKER_URL` contains `"`, `$`, `\` or `#`, or `TRACKER_INTERVAL` isn't a whole number, the
+container refuses to start. Run `docker compose logs ipmagnet` to see why.
+
+### Where to put your settings
+
+Don't edit `docker-compose.yml`. Your changes would conflict with (or be overwritten by) the next
+`git pull`. Use these two files instead. Both are ignored by git.
+
+* **`docker-compose.override.yml`** holds the container settings (`TRACKER_URL` and the others marked
+  "override file" above):
+
+  ```yaml
+  services:
+    ipmagnet:
+      environment:
+        TRACKER_URL: "https://ipmagnet.example.com/"
+  ```
+
+  A plain `docker compose` command loads this file automatically. If you list compose files yourself
+  with `-f` or `COMPOSE_FILE`, include it in the list.
+
+* **`.env`** holds the variables Compose itself reads (the ones marked `.env` above), one
+  `NAME=value` per line. Compose reads it from the project directory.
+
+## Running without Compose
+
+```bash
 docker build -t ipmagnet .
-docker run -d -p 80:80 -e TRACKER_URL="http://localhost/" -v ipmagnet-data:/var/www/data ipmagnet
+docker run -d -p 80:80 \
+  -e TRACKER_URL="https://ipmagnet.example.com/" \
+  -v ipmagnet-data:/var/www/data \
+  ipmagnet
 ```
 
-### Optional: TLS via SWAG (reverse proxy)
+## HTTPS with SWAG (optional)
 
-`docker-compose.swag.yml` is an overlay that puts [linuxserver/swag](https://github.com/linuxserver/docker-swag)
-(nginx + automatic Let's Encrypt certificates) in front of ipMagnet and removes ipMagnet's own
-public port, so only swag is exposed on 80/443. It uses the Cloudflare DNS-01 challenge, so it
-works even if the host isn't reachable on 80/443 during issuance and doesn't require pointing the
-apex domain anywhere.
+`docker-compose.swag.yml` adds SWAG (nginx with automatic Let's Encrypt certificates) in front of
+ipMagnet on ports 80 and 443, and sets `TRUST_PROXY=true` on ipMagnet. Certificates are issued through
+Cloudflare's DNS-01 challenge, so the host doesn't need to be reachable during issuance.
 
-1. Create a Cloudflare API token scoped to your zone with **Zone:DNS:Edit** and **Zone:Zone:Read**
-   permissions only.
-2. Save it at `<SWAG_CONFIG_DIR>/dns-conf/cloudflare.ini` (default `./swag-config/dns-conf/cloudflare.ini`)
-   as:
-   ```
-   dns_cloudflare_api_token = <token>
-   ```
-   and `chmod 600` it. Never commit this file.
-3. Set `SWAG_URL` (your registered domain, e.g. `example.com`) and `SWAG_EMAIL` (for Let's Encrypt
-   registration). Also set `IPMAGNET_BIND=127.0.0.1` and `IPMAGNET_PORT` to an unused local port
-   (e.g. `8081`) so ipMagnet's own port isn't publicly reachable alongside swag's - Compose merges
-   `ports` additively across `-f` files rather than letting an overlay replace it, so this can't be
-   done from `docker-compose.swag.yml` itself. Then start both files together, including any
-   deployment-specific override:
-   ```
-   docker compose -f docker-compose.yml -f docker-compose.override.yml -f docker-compose.swag.yml up -d
-   ```
-4. Two ready-made proxy configs are provided in `swag-templates/`, matching linuxserver's own
-   per-app sample convention - pick one (or both) and copy it into swag's persistent config volume,
-   dropping the `.sample` suffix so nginx picks it up, then reload: `docker exec swag nginx -s reload`.
+**Already running SWAG?** Skip the overlay. Copy one of the templates from `swag-templates/` into your
+existing SWAG's `nginx/proxy-confs/`, put ipMagnet on the same Docker network as SWAG so the hostname
+`ipmagnet` resolves, and set `TRUST_PROXY=true`.
 
-   * **Subdomain method** (`ipmagnet.subdomain.conf.sample` → `nginx/proxy-confs/ipmagnet.subdomain.conf`) -
-     serves ipMagnet at `https://ipmagnet.<yourdomain>/`, as its own vhost. This is what the DNS
-     record and Cloudflare token above are for, and needs no other changes.
-   * **Subfolder method** (`ipmagnet.subfolder.conf.sample` → `nginx/proxy-confs/ipmagnet.subfolder.conf`) -
-     serves ipMagnet at `https://<yourdomain>/ipmagnet/`, under swag's default site instead of a
-     dedicated subdomain. Since that default site answers for whatever hostname(s) `URL`/
-     `EXTRA_DOMAINS` cover, only use this if you actually want ipMagnet exposed under your bare
-     apex domain (which may already be serving something else there) - and if `ONLY_SUBDOMAINS=true`,
-     the cert won't cover the apex at all, so you'd need to unset that or add it via `EXTRA_DOMAINS`.
+### Prerequisites
 
-   **Note:** ipMagnet reads the client IP from `REMOTE_ADDR`, which under this proxy setup will be
-   swag's internal container address rather than the real visitor - defeating the point of the app.
-   See upstream's "Deployment behind a reverse proxy" notes for what needs to change in `index.php`
-   to read the real client IP from the forwarded-for header instead.
+* Your domain's DNS is hosted on Cloudflare.
+* An `A` record (plus `AAAA` if the host has IPv6) for `ipmagnet.<your domain>` pointing at the host,
+  set to **DNS only**. If Cloudflare proxies the record, every hit is logged with a Cloudflare address.
+* A Cloudflare API token with only **Zone:DNS:Edit** and **Zone:Zone:Read**, scoped to that one zone.
+
+### Setup
+
+1. Save the token where SWAG will look for it:
+
+   ```bash
+   mkdir -p swag-config/dns-conf
+   echo "dns_cloudflare_api_token = <token>" > swag-config/dns-conf/cloudflare.ini
+   chmod 600 swag-config/dns-conf/cloudflare.ini
+   ```
+
+2. Create `.env`:
+
+   ```ini
+   SWAG_URL=example.com
+   SWAG_EMAIL=you@example.com
+   IPMAGNET_BIND=127.0.0.1
+   IPMAGNET_PORT=8081
+   COMPOSE_FILE=docker-compose.yml:docker-compose.override.yml:docker-compose.swag.yml
+   ```
+
+   * `IPMAGNET_BIND=127.0.0.1` keeps ipMagnet's own port off the public interface, so only SWAG is
+     reachable. The overlay can't do this itself: Compose adds up `ports` entries across files
+     instead of replacing them.
+   * `COMPOSE_FILE` makes plain `docker compose` commands use all three files. The commands below
+     assume it's set. On Windows, separate the files with `;` instead of `:`.
+
+3. Create `docker-compose.override.yml` with an **https** tracker URL:
+
+   ```yaml
+   services:
+     ipmagnet:
+       environment:
+         TRACKER_URL: "https://ipmagnet.example.com/"
+   ```
+
+   SWAG redirects all plain HTTP to HTTPS, and not every BitTorrent client follows redirects when
+   announcing, so an `http://` tracker URL can lose hits.
+
+4. Start everything, then watch SWAG obtain its certificate. Wait for `Server ready`:
+
+   ```bash
+   docker compose up -d --build
+   docker compose logs -f swag
+   ```
+
+5. Install the proxy config and reload nginx. `swag-config/nginx/` only exists after SWAG's first
+   start, which is why this comes last:
+
+   ```bash
+   cp swag-templates/ipmagnet.subdomain.conf.sample swag-config/nginx/proxy-confs/ipmagnet.subdomain.conf
+   docker compose exec swag nginx -s reload
+   ```
+
+Open `https://ipmagnet.<your domain>/`. The page should show your public IP as "the address you've
+accessed this page with". A `172.x.x.x` address means `TRUST_PROXY` isn't in effect.
+
+### Subdomain or subfolder
+
+Pick one. `TRACKER_URL` can only point at one of them.
+
+* **Subdomain** (`ipmagnet.subdomain.conf.sample`) serves `https://ipmagnet.<your domain>/`. The
+  overlay is set up for this. The subdomain name is fixed to `ipmagnet`. To change it, edit
+  `SUBDOMAINS` in `docker-compose.swag.yml` and `server_name` in the proxy config.
+* **Subfolder** (`ipmagnet.subfolder.conf.sample`) serves `https://<your domain>/ipmagnet/` from
+  SWAG's default site. The certificate then has to cover your bare domain: set `ONLY_SUBDOMAINS=false`
+  in `docker-compose.swag.yml`, and point the bare domain's DNS at this host. That moves anything
+  currently served there. Set `TRACKER_URL` to `https://<your domain>/ipmagnet/`.
+
+## Behind another reverse proxy
+
+Set `TRUST_PROXY=true` only if ipMagnet can be reached **solely** through your proxy. The proxy must
+set `X-Real-IP` to the client's address and overwrite any value the client sent. In nginx:
+`proxy_set_header X-Real-IP $remote_addr;`.
+
+ipMagnet uses the header only when all of these hold:
+
+* `TRUST_PROXY` is `true`.
+* The connection comes from a private or loopback address.
+* The header contains a valid IP address.
+
+Otherwise it logs the connecting address. `X-Forwarded-For` is ignored, because clients can prepend
+fake entries to it. That differs from upstream's reverse-proxy advice, which doesn't apply to this fork.
+
+## Updating
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+The app's code is built into the image, so restarting without `--build` keeps running the old
+version. Your `.env` and override file aren't touched by `git pull`.
+
+## Data and backups
+
+Hits are stored in SQLite at `/var/www/data/ipmagnet.db3`, in the `ipmagnet-data` volume. To copy it
+out:
+
+```bash
+docker compose cp ipmagnet:/var/www/data/ipmagnet.db3 ./ipmagnet-backup.db3
+```
+
+You can bind-mount a host directory at `/var/www/data` instead. The container fixes its ownership at
+startup. For users' privacy, upstream recommends wiping the database regularly.
