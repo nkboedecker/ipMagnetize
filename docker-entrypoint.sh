@@ -31,6 +31,8 @@ if [ ! -f "$DB_PATH" ]; then
 	SQL
 fi
 
-chown www-data:www-data "$DB_PATH"
+# SQLite writes its journal next to the database, so the directory must be
+# writable too (a bind-mounted host directory is typically root-owned)
+chown www-data:www-data "$(dirname "$DB_PATH")" "$DB_PATH"
 
 exec "$@"
