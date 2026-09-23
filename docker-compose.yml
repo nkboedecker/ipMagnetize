@@ -1,0 +1,16 @@
+services:
+  ipmagnet:
+    build: .
+    ports:
+      - "80:80"
+    environment:
+      # Public URL of this instance, must include the trailing slash.
+      TRACKER_URL: "http://localhost/"
+      ENABLE_INTERVAL: "false"
+      TRACKER_INTERVAL: "300"
+    volumes:
+      - ipmagnet-data:/var/www/data
+    restart: unless-stopped
+
+volumes:
+  ipmagnet-data:

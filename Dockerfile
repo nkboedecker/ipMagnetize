@@ -1,0 +1,31 @@
+FROM php:8.2-apache
+
+# pdo_sqlite is required by index.php; the sqlite3 CLI is used by docker-entrypoint.sh
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends libsqlite3-dev sqlite3 \
+	&& rm -rf /var/lib/apt/lists/* \
+	&& docker-php-ext-install pdo_sqlite
+
+# Allow .htaccess (e.g. sample.htaccess installed as .htaccess) to take effect
+RUN a2enmod rewrite \
+	&& sed -ri 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf
+
+WORKDIR /var/www/html
+
+COPY index.php COPYING.txt README.md ./
+COPY static/ ./static/
+COPY sample.htaccess ./.htaccess
+COPY docker-entrypoint.sh /usr/local/bin/
+
+# Store the database outside the web root (avoids relying solely on .htaccess to
+# block downloads of it, per the README's security recommendation) and point
+# index.php's PDO DSN at it.
+RUN mkdir -p /var/www/data \
+	&& sed -i 's#sqlite:ipmagnet.db3#sqlite:/var/www/data/ipmagnet.db3#' index.php \
+	&& chmod +x /usr/local/bin/docker-entrypoint.sh \
+	&& chown -R www-data:www-data /var/www/html /var/www/data
+
+VOLUME ["/var/www/data"]
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["apache2-foreground"]

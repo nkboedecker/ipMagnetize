@@ -86,6 +86,35 @@ if (!isset($_SERVER["PHP_AUTH_USER"]) || $_SERVER["PHP_AUTH_PW"] != "SUPER_SECRE
 Replace `SUPER_SECRET_PASSWORD` with a plaintext password of your choice. This should allow BitTorrent clients to access the tracking link without
 problems while preventing access to the web panel.
 
+## Running in Docker
+
+A `Dockerfile` and `docker-compose.yml` are provided. The image is based on `php:8.2-apache` with the
+`pdo_sqlite` extension enabled, and stores the SQLite database outside the web root at `/var/www/data`
+so it can't be downloaded and so it persists across container recreation.
+
+Quick start:
+
+```
+docker compose up -d --build
+```
+
+This starts ipMagnet on http://localhost/, with the database persisted in the `ipmagnet-data`
+volume. Edit `TRACKER_URL` in `docker-compose.yml` to the public URL clients will use before deploying,
+including the trailing slash.
+
+Environment variables (applied at container start, no rebuild needed):
+
+* `TRACKER_URL` - the public tracker URL embedded in generated magnet links (equivalent to editing line 2 of `index.php`).
+* `ENABLE_INTERVAL` - set to `true` to enable the tracker interval feature (see warning above).
+* `TRACKER_INTERVAL` - the interval in seconds, if enabled.
+
+Without Compose:
+
+```
+docker build -t ipmagnet .
+docker run -d -p 80:80 -e TRACKER_URL="http://localhost/" -v ipmagnet-data:/var/www/data ipmagnet
+```
+
 ### Deployment behind a reverse proxy
 
 Deploying ipMagnet behind a reverse proxy is possible, but it is very much an advanced use-case. To do so, make sure that the front-end server
