@@ -3,7 +3,8 @@
 	$db = new PDO("sqlite:ipmagnet.db3");
 	$enableInterval=false;
 	$trackerInterval=300;
-	
+	$trustProxy=false; //set to true only when running behind your own reverse proxy that sets X-Real-IP
+
 	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_SILENT);
 
 	function is_sha1($string){
@@ -15,12 +16,11 @@
 		return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === FALSE;
 	}
 
-	//when running behind a reverse proxy (e.g. the bundled SWAG setup), REMOTE_ADDR is the
-	//proxy's own address; use the client IP it forwarded instead, but only if the connecting
-	//peer is itself trusted (private/local), so an untrusted client can't spoof this header
-	//by talking to ipMagnet directly
+	//behind a reverse proxy, REMOTE_ADDR is the proxy's own address; use the client IP it
+	//forwarded instead. Requiring a private peer as well guards against the header being
+	//trusted if ipMagnet's port is accidentally exposed directly.
 	$REMOTE_ADDR = $_SERVER["REMOTE_ADDR"];
-	if(is_trusted_proxy($REMOTE_ADDR) && filter_var($_SERVER["HTTP_X_REAL_IP"] ?? "", FILTER_VALIDATE_IP) !== FALSE){
+	if($trustProxy && is_trusted_proxy($REMOTE_ADDR) && filter_var($_SERVER["HTTP_X_REAL_IP"] ?? "", FILTER_VALIDATE_IP) !== FALSE){
 		$REMOTE_ADDR = $_SERVER["HTTP_X_REAL_IP"];
 	}
 

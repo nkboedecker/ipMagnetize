@@ -12,6 +12,10 @@
 ### .env file before starting.
 
 services:
+  ipmagnet:
+    environment:
+      TRUST_PROXY: "true"
+
   swag:
     image: lscr.io/linuxserver/swag:latest
     container_name: swag

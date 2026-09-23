@@ -12,6 +12,9 @@ services:
       TRACKER_URL: "http://localhost/"
       ENABLE_INTERVAL: "false"
       TRACKER_INTERVAL: "300"
+      # Use the client IP from a reverse proxy's X-Real-IP header. Enable only
+      # when ipMagnet is reachable solely through your own proxy.
+      TRUST_PROXY: "false"
     volumes:
       - ipmagnet-data:/var/www/data
     restart: unless-stopped

@@ -19,6 +19,10 @@ if [ -n "$TRACKER_INTERVAL" ]; then
 	sed -i "s/\$trackerInterval=[0-9]*;/\$trackerInterval=${TRACKER_INTERVAL};/" "$INDEX_PHP"
 fi
 
+if [ "$TRUST_PROXY" = "true" ]; then
+	sed -i 's/\$trustProxy=false;/$trustProxy=true;/' "$INDEX_PHP"
+fi
+
 if [ ! -f "$DB_PATH" ]; then
 	sqlite3 "$DB_PATH" <<-'SQL'
 		CREATE TABLE hits (
