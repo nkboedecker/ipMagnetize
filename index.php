@@ -53,7 +53,7 @@
 				":hash" => htmlentities(bin2hex($_GET["info_hash"]), ENT_QUOTES),
 				":timestamp" => time(),
 				":addr" => $addrs,
-				":agent" => htmlentities($_SERVER["HTTP_USER_AGENT"],ENT_QUOTES)
+				":agent" => htmlentities($_SERVER["HTTP_USER_AGENT"] ?? "", ENT_QUOTES)
 			)
 		))){
 			//failed to insert.
