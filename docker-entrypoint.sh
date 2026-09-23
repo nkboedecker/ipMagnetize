@@ -7,6 +7,13 @@ INDEX_PHP="/var/www/html/index.php"
 # Allow the public tracker URL and interval feature to be configured at
 # container start instead of requiring a rebuild.
 if [ -n "$TRACKER_URL" ]; then
+	# it's substituted into a double-quoted PHP string by a #-delimited sed
+	case "$TRACKER_URL" in
+		*[\"\$\\#]*)
+			echo "TRACKER_URL must not contain \", \$, \\ or #" >&2
+			exit 1
+			;;
+	esac
 	escaped_url=$(printf '%s' "$TRACKER_URL" | sed 's/[&/\]/\\&/g')
 	sed -i "s#\$TRACKER=urlencode(\"[^\"]*\")#\$TRACKER=urlencode(\"${escaped_url}\")#" "$INDEX_PHP"
 fi
@@ -16,6 +23,12 @@ if [ "$ENABLE_INTERVAL" = "true" ]; then
 fi
 
 if [ -n "$TRACKER_INTERVAL" ]; then
+	case "$TRACKER_INTERVAL" in
+		*[!0-9]*)
+			echo "TRACKER_INTERVAL must be a whole number of seconds" >&2
+			exit 1
+			;;
+	esac
 	sed -i "s/\$trackerInterval=[0-9]*;/\$trackerInterval=${TRACKER_INTERVAL};/" "$INDEX_PHP"
 fi
 
