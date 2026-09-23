@@ -17,6 +17,12 @@ services:
       TRUST_PROXY: "false"
     volumes:
       - ipmagnet-data:/var/www/data
+    # Nothing in the image needs setuid binaries once the entrypoint (already
+    # root) hands over to Apache, and the process cap stops a fork bomb from
+    # exhausting the host's PIDs.
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 200
     restart: unless-stopped
 
 volumes:
