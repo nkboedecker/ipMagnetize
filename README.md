@@ -12,6 +12,8 @@ This fork adds:
   certificates.
 * Correct client IP detection behind a reverse proxy (`TRUST_PROXY`).
 
+DISCLOSURE: This code was written with the assistance of Claude Code (Anthropic).
+
 ## Quick start
 
 From a checkout of this repository:
