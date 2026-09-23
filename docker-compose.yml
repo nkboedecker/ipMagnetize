@@ -26,6 +26,12 @@ services:
     # Idles around 20 MB. The cap keeps a runaway process from pushing the
     # whole host into swap or the OOM killer; raise it via .env if needed.
     mem_limit: ${IPMAGNET_MEM_LIMIT:-256m}
+    # Docker's default json-file logging never rotates.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     restart: unless-stopped
 
 volumes:
