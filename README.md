@@ -38,10 +38,12 @@ generates will point clients at `localhost`.
 | `TRUST_PROXY` | `false` | override file | Take the client IP from a reverse proxy's `X-Real-IP` header. The SWAG overlay sets this to `true`. See [Behind another reverse proxy](#behind-another-reverse-proxy). |
 | `IPMAGNET_BIND` | `0.0.0.0` | `.env` | Host address ipMagnet's port is published on. |
 | `IPMAGNET_PORT` | `80` | `.env` | Host port ipMagnet is published on. |
+| `IPMAGNET_MEM_LIMIT` | `256m` | `.env` | Memory cap for the ipMagnet container. It idles around 20 MB. |
 | `SWAG_URL` | *(required for SWAG)* | `.env` | Your registered domain, e.g. `example.com`. |
 | `SWAG_EMAIL` | *(required for SWAG)* | `.env` | Contact address for Let's Encrypt. |
 | `SWAG_TZ` | `Etc/UTC` | `.env` | Time zone for the SWAG container. |
 | `SWAG_CONFIG_DIR` | `./swag-config` | `.env` | SWAG's persistent config: certificates, nginx config, and the Cloudflare token. |
+| `SWAG_MEM_LIMIT` | `512m` | `.env` | Memory cap for the SWAG container. Raise it if SWAG also serves other apps. |
 
 If `TRACKER_URL` contains `"`, `$`, `\` or `#`, or `TRACKER_INTERVAL` isn't a whole number, the
 container refuses to start. Run `docker compose logs ipmagnet` to see why.

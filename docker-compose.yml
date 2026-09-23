@@ -23,6 +23,9 @@ services:
     security_opt:
       - no-new-privileges:true
     pids_limit: 200
+    # Idles around 20 MB. The cap keeps a runaway process from pushing the
+    # whole host into swap or the OOM killer; raise it via .env if needed.
+    mem_limit: ${IPMAGNET_MEM_LIMIT:-256m}
     restart: unless-stopped
 
 volumes:

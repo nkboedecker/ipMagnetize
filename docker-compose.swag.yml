@@ -28,6 +28,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+    # nginx, PHP-FPM and fail2ban idle around 50 MB; certbot adds some during
+    # renewals. Raise via .env if you serve other apps through this SWAG.
+    mem_limit: ${SWAG_MEM_LIMIT:-512m}
     restart: unless-stopped
     depends_on:
       - ipmagnet
