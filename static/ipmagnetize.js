@@ -21,7 +21,7 @@ TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 	0. You just DO WHAT THE FUCK YOU WANT TO.
 */
 
-var ipmagnet={
+var ipmagnetize={
 	apiUrl:"index.php",
 	hash:"",
 
@@ -45,28 +45,28 @@ var ipmagnet={
 		}
 
 		//store hash
-		ipmagnet.hash=hash;
+		ipmagnetize.hash=hash;
 
 		//hook links
 		var updateLink=document.getElementById("update-link");
 		var clearLink=document.getElementById("clear-link");
 		updateLink.href="#";
 		clearLink.href="#";
-		updateLink.onclick=ipmagnet.update;
-		clearLink.onclick=ipmagnet.clear;
+		updateLink.onclick=ipmagnetize.update;
+		clearLink.onclick=ipmagnetize.clear;
 
 		//start interval
-		setInterval(ipmagnet.update, 10000);
+		setInterval(ipmagnetize.update, 10000);
 
-		ipmagnet.statusDisplay("JavaScript detected!");
+		ipmagnetize.statusDisplay("JavaScript detected!");
 	},
 
 	update:function(){
-		ipmagnet.updateTable(ipmagnet.hash, false);
+		ipmagnetize.updateTable(ipmagnetize.hash, false);
 	},
 
 	clear:function(){
-		ipmagnet.updateTable(ipmagnet.hash, true);
+		ipmagnetize.updateTable(ipmagnetize.hash, true);
 	},
 
 	//build a single table row, given the text contents and optionally a tag name
@@ -88,46 +88,46 @@ var ipmagnet={
 
 	//format a javascript date object to a sensible string representation
 	formatDate:function(date){
-		var datePart = ipmagnet.pad(date.getDate(), '0', 2) + "." + ipmagnet.pad(date.getMonth() + 1, '0', 2) + "." + date.getFullYear();
-		var timePart = ipmagnet.pad(date.getHours(), '0', 2) + ":" + ipmagnet.pad(date.getMinutes(), '0', 2) + ":" + ipmagnet.pad(date.getSeconds(), '0', 2);
+		var datePart = ipmagnetize.pad(date.getDate(), '0', 2) + "." + ipmagnetize.pad(date.getMonth() + 1, '0', 2) + "." + date.getFullYear();
+		var timePart = ipmagnetize.pad(date.getHours(), '0', 2) + ":" + ipmagnetize.pad(date.getMinutes(), '0', 2) + ":" + ipmagnetize.pad(date.getSeconds(), '0', 2);
 
 		return datePart + " " + timePart + " (" + Intl.DateTimeFormat().resolvedOptions().timeZone + ")";
 	},
 
 	updateTable:function(hash, clear){
 		//get all hits from the database
-		ajax.asyncGet(ipmagnet.apiUrl+"?ajax&hash="+hash+(clear?"&clear":""), function(req){
+		ajax.asyncGet(ipmagnetize.apiUrl+"?ajax&hash="+hash+(clear?"&clear":""), function(req){
 			//xhr completion function
 			if(req.status==200){
 				try{
 					var response=JSON.parse(req.responseText);		
 				}
 				catch(e){
-					ipmagnet.statusDisplay("Failed to parse response.");
+					ipmagnetize.statusDisplay("Failed to parse response.");
 					return;
 				}
 
 				if(response.code!=0){
-					ipmagnet.statusDisplay(response.message);
+					ipmagnetize.statusDisplay(response.message);
 					return;
 				}
 				var hitsTable=document.getElementById("conn-table");
 				hitsTable.innerHTML="";
-				hitsTable.appendChild(ipmagnet.buildRow(["Timestamp","IP address(es)","User Agent"],"th"));
+				hitsTable.appendChild(ipmagnetize.buildRow(["Timestamp","IP address(es)","User Agent"],"th"));
 				
 				if(response.hits){
 					response.hits.forEach(function(hit){
 						var timestamp=new Date(parseInt(hit.timestamp)*1000);
-						hitsTable.appendChild(ipmagnet.buildRow([ipmagnet.formatDate(timestamp), ipmagnet.decodeEntities(hit.addr), ipmagnet.decodeEntities(hit.agent)]));
+						hitsTable.appendChild(ipmagnetize.buildRow([ipmagnetize.formatDate(timestamp), ipmagnetize.decodeEntities(hit.addr), ipmagnetize.decodeEntities(hit.agent)]));
 					});
 				}
 			}
 			else{
-				ipmagnet.statusDisplay("Failed to fetch data (HTTP "+req.status+")");
+				ipmagnetize.statusDisplay("Failed to fetch data (HTTP "+req.status+")");
 			}
 		}, function(e){
 			//error function
-			ipmagnet.statusDisplay("Failed to fetch data ("+e.message+")");
+			ipmagnetize.statusDisplay("Failed to fetch data ("+e.message+")");
 		});
 	}
 };

@@ -20,7 +20,7 @@ COPY docker-entrypoint.sh /usr/local/bin/
 # Keep the database outside the web root so it can never be downloaded, and
 # point index.php's PDO DSN at it.
 RUN mkdir -p /var/www/data \
-	&& sed -i 's#sqlite:ipmagnet.db3#sqlite:/var/www/data/ipmagnet.db3#' index.php \
+	&& sed -i 's#sqlite:ipmagnetize.db3#sqlite:/var/www/data/ipmagnetize.db3#' index.php \
 	&& chmod +x /usr/local/bin/docker-entrypoint.sh \
 	&& chown root:root /var/www/html \
 	&& chmod 755 /var/www/html \
