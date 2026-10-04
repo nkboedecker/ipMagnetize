@@ -1,0 +1,21 @@
+# make sure that your ipmagnetize container is named ipmagnetize (the default
+# service name in docker-compose.yml)
+#
+# ipMagnetize's links are all relative, so it needs no base-URL setting; the
+# /ipmagnetize prefix is stripped before requests are forwarded.
+
+location = /ipmagnetize {
+    return 301 /ipmagnetize/;
+}
+
+# ^~ so swag's default "location ~ \.php" doesn't capture /ipmagnetize/index.php
+location ^~ /ipmagnetize/ {
+    include /config/nginx/proxy.conf;
+    include /config/nginx/resolver.conf;
+    set $upstream_app ipmagnetize;
+    set $upstream_port 80;
+    set $upstream_proto http;
+    # proxy_pass with variables doesn't strip the location prefix itself
+    rewrite ^/ipmagnetize(/.*)$ $1 break;
+    proxy_pass $upstream_proto://$upstream_app:$upstream_port;
+}

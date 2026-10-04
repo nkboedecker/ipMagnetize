@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-DB_PATH="/var/www/data/ipmagnet.db3"
+DB_PATH="/var/www/data/ipmagnetize.db3"
 INDEX_PHP="/var/www/html/index.php"
 
 # Allow the public tracker URL and interval feature to be configured at

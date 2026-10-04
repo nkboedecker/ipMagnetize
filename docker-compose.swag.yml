@@ -1,11 +1,11 @@
 # Optional HTTPS overlay: puts linuxserver/swag (nginx + Let's Encrypt via
-# Cloudflare DNS-01) in front of ipMagnet and turns on TRUST_PROXY. Needs
-# SWAG_URL, SWAG_EMAIL and IPMAGNET_BIND=127.0.0.1 in .env, and a Cloudflare
+# Cloudflare DNS-01) in front of ipMagnetize and turns on TRUST_PROXY. Needs
+# SWAG_URL, SWAG_EMAIL and IPMAGNETIZE_BIND=127.0.0.1 in .env, and a Cloudflare
 # token in swag-config/dns-conf/cloudflare.ini. See "HTTPS with SWAG" in
 # README.md for the full setup.
 
 services:
-  ipmagnet:
+  ipmagnetize:
     environment:
       TRUST_PROXY: "true"
 
@@ -20,7 +20,7 @@ services:
       - PGID=1000
       - TZ=${SWAG_TZ:-Etc/UTC}
       - URL=${SWAG_URL:?set SWAG_URL to your domain, e.g. in .env}
-      - SUBDOMAINS=ipmagnet
+      - SUBDOMAINS=ipmagnetize
       - ONLY_SUBDOMAINS=true
       - VALIDATION=dns
       - DNSPLUGIN=cloudflare
@@ -41,4 +41,4 @@ services:
         max-file: "3"
     restart: unless-stopped
     depends_on:
-      - ipmagnet
+      - ipmagnetize
