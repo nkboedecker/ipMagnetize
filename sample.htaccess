@@ -1,4 +1,4 @@
-<Files "ipmagnet.db3">
+<Files "ipmagnetize.db3">
     Order allow,deny
     Deny from all
 </Files>

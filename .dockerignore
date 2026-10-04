@@ -1,6 +1,6 @@
 .git
 .gitignore
-ipmagnet.db3
+ipmagnetize.db3
 TODO
 .env
 *.env

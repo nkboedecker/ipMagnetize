@@ -3,7 +3,7 @@ ipMagnetize
 
 ipMagnetize is a fork of [ipMagnet](https://github.com/cbdevnet/ipmagnet), which shows which IP
 addresses your BitTorrent client hands out to trackers. See upstream for what the app does, its
-privacy notes, and manual (non-Docker) setup. The app itself still calls itself ipMagnet.
+privacy notes, and manual (non-Docker) setup.
 
 This fork adds:
 
@@ -22,7 +22,7 @@ From a checkout of this repository:
 docker compose up -d --build
 ```
 
-ipMagnet is now on http://localhost/. Before exposing it publicly, set `TRACKER_URL` to the address
+ipMagnetize is now on http://localhost/. Before exposing it publicly, set `TRACKER_URL` to the address
 BitTorrent clients will reach it at (see [Configuration](#configuration)), or the magnet links it
 generates will point clients at `localhost`.
 
@@ -36,9 +36,9 @@ generates will point clients at `localhost`.
 | `ENABLE_INTERVAL` | `false` | override file | Ask clients to re-announce periodically. Read upstream's warning before enabling. |
 | `TRACKER_INTERVAL` | `300` | override file | Re-announce interval in seconds, if enabled. |
 | `TRUST_PROXY` | `false` | override file | Take the client IP from a reverse proxy's `X-Real-IP` header. The SWAG overlay sets this to `true`. See [Behind another reverse proxy](#behind-another-reverse-proxy). |
-| `IPMAGNET_BIND` | `0.0.0.0` | `.env` | Host address ipMagnet's port is published on. |
-| `IPMAGNET_PORT` | `80` | `.env` | Host port ipMagnet is published on. |
-| `IPMAGNET_MEM_LIMIT` | `256m` | `.env` | Memory cap for the ipMagnet container. It idles around 20 MB. |
+| `IPMAGNETIZE_BIND` | `0.0.0.0` | `.env` | Host address ipMagnetize's port is published on. |
+| `IPMAGNETIZE_PORT` | `80` | `.env` | Host port ipMagnetize is published on. |
+| `IPMAGNETIZE_MEM_LIMIT` | `256m` | `.env` | Memory cap for the ipMagnetize container. It idles around 20 MB. |
 | `SWAG_URL` | *(required for SWAG)* | `.env` | Your registered domain, e.g. `example.com`. |
 | `SWAG_EMAIL` | *(required for SWAG)* | `.env` | Contact address for Let's Encrypt. |
 | `SWAG_TZ` | `Etc/UTC` | `.env` | Time zone for the SWAG container. |
@@ -47,7 +47,7 @@ generates will point clients at `localhost`.
 | `SWAG_VERSION` | `5.8.0-ls486` | `.env` | SWAG image tag. See [Updating](#updating). |
 
 If `TRACKER_URL` contains `"`, `$`, `\` or `#`, or `TRACKER_INTERVAL` isn't a whole number, the
-container refuses to start. Run `docker compose logs ipmagnet` to see why.
+container refuses to start. Run `docker compose logs ipmagnetize` to see why.
 
 ### Where to put your settings
 
@@ -59,9 +59,9 @@ Don't edit `docker-compose.yml`. Your changes would conflict with (or be overwri
 
   ```yaml
   services:
-    ipmagnet:
+    ipmagnetize:
       environment:
-        TRACKER_URL: "https://ipmagnet.example.com/"
+        TRACKER_URL: "https://ipmagnetize.example.com/"
   ```
 
   A plain `docker compose` command loads this file automatically. If you list compose files yourself
@@ -73,27 +73,27 @@ Don't edit `docker-compose.yml`. Your changes would conflict with (or be overwri
 ## Running without Compose
 
 ```bash
-docker build -t ipmagnet .
+docker build -t ipmagnetize .
 docker run -d -p 80:80 \
-  -e TRACKER_URL="https://ipmagnet.example.com/" \
-  -v ipmagnet-data:/var/www/data \
-  ipmagnet
+  -e TRACKER_URL="https://ipmagnetize.example.com/" \
+  -v ipmagnetize-data:/var/www/data \
+  ipmagnetize
 ```
 
 ## HTTPS with SWAG (optional)
 
 `docker-compose.swag.yml` adds SWAG (nginx with automatic Let's Encrypt certificates) in front of
-ipMagnet on ports 80 and 443, and sets `TRUST_PROXY=true` on ipMagnet. Certificates are issued through
-Cloudflare's DNS-01 challenge, so the host doesn't need to be reachable during issuance.
+ipMagnetize on ports 80 and 443, and sets `TRUST_PROXY=true` on ipMagnetize. Certificates are issued
+through Cloudflare's DNS-01 challenge, so the host doesn't need to be reachable during issuance.
 
 **Already running SWAG?** Skip the overlay. Copy one of the templates from `swag-templates/` into your
-existing SWAG's `nginx/proxy-confs/`, put ipMagnet on the same Docker network as SWAG so the hostname
-`ipmagnet` resolves, and set `TRUST_PROXY=true`.
+existing SWAG's `nginx/proxy-confs/`, put ipMagnetize on the same Docker network as SWAG so the hostname
+`ipmagnetize` resolves, and set `TRUST_PROXY=true`.
 
 ### Prerequisites
 
 * Your domain's DNS is hosted on Cloudflare.
-* An `A` record (plus `AAAA` if the host has IPv6) for `ipmagnet.<your domain>` pointing at the host,
+* An `A` record (plus `AAAA` if the host has IPv6) for `ipmagnetize.<your domain>` pointing at the host,
   set to **DNS only**. If Cloudflare proxies the record, every hit is logged with a Cloudflare address.
 * A Cloudflare API token with only **Zone:DNS:Edit** and **Zone:Zone:Read**, scoped to that one zone.
 
@@ -112,13 +112,13 @@ existing SWAG's `nginx/proxy-confs/`, put ipMagnet on the same Docker network as
    ```ini
    SWAG_URL=example.com
    SWAG_EMAIL=you@example.com
-   IPMAGNET_BIND=127.0.0.1
-   IPMAGNET_PORT=8081
+   IPMAGNETIZE_BIND=127.0.0.1
+   IPMAGNETIZE_PORT=8081
    COMPOSE_FILE=docker-compose.yml:docker-compose.override.yml:docker-compose.swag.yml
    ```
 
-   * `IPMAGNET_BIND=127.0.0.1` keeps ipMagnet's own port off the public interface, so only SWAG is
-     reachable. The overlay can't do this itself: Compose adds up `ports` entries across files
+   * `IPMAGNETIZE_BIND=127.0.0.1` keeps ipMagnetize's own port off the public interface, so only SWAG
+     is reachable. The overlay can't do this itself: Compose adds up `ports` entries across files
      instead of replacing them.
    * `COMPOSE_FILE` makes plain `docker compose` commands use all three files. The commands below
      assume it's set. On Windows, separate the files with `;` instead of `:`.
@@ -127,9 +127,9 @@ existing SWAG's `nginx/proxy-confs/`, put ipMagnet on the same Docker network as
 
    ```yaml
    services:
-     ipmagnet:
+     ipmagnetize:
        environment:
-         TRACKER_URL: "https://ipmagnet.example.com/"
+         TRACKER_URL: "https://ipmagnetize.example.com/"
    ```
 
    SWAG redirects all plain HTTP to HTTPS, and not every BitTorrent client follows redirects when
@@ -146,24 +146,24 @@ existing SWAG's `nginx/proxy-confs/`, put ipMagnet on the same Docker network as
    start, which is why this comes last:
 
    ```bash
-   cp swag-templates/ipmagnet.subdomain.conf.sample swag-config/nginx/proxy-confs/ipmagnet.subdomain.conf
+   cp swag-templates/ipmagnetize.subdomain.conf.sample swag-config/nginx/proxy-confs/ipmagnetize.subdomain.conf
    docker compose exec swag nginx -s reload
    ```
 
-Open `https://ipmagnet.<your domain>/`. The page should show your public IP as "the address you've
+Open `https://ipmagnetize.<your domain>/`. The page should show your public IP as "the address you've
 accessed this page with". A `172.x.x.x` address means `TRUST_PROXY` isn't in effect.
 
 ### Subdomain or subfolder
 
 Pick one. `TRACKER_URL` can only point at one of them.
 
-* **Subdomain** (`ipmagnet.subdomain.conf.sample`) serves `https://ipmagnet.<your domain>/`. The
-  overlay is set up for this. The subdomain name is fixed to `ipmagnet`. To change it, edit
+* **Subdomain** (`ipmagnetize.subdomain.conf.sample`) serves `https://ipmagnetize.<your domain>/`. The
+  overlay is set up for this. The subdomain name is fixed to `ipmagnetize`. To change it, edit
   `SUBDOMAINS` in `docker-compose.swag.yml` and `server_name` in the proxy config.
-* **Subfolder** (`ipmagnet.subfolder.conf.sample`) serves `https://<your domain>/ipmagnet/` from
+* **Subfolder** (`ipmagnetize.subfolder.conf.sample`) serves `https://<your domain>/ipmagnetize/` from
   SWAG's default site. The certificate then has to cover your bare domain: set `ONLY_SUBDOMAINS=false`
   in `docker-compose.swag.yml`, and point the bare domain's DNS at this host. That moves anything
-  currently served there. Set `TRACKER_URL` to `https://<your domain>/ipmagnet/`.
+  currently served there. Set `TRACKER_URL` to `https://<your domain>/ipmagnetize/`.
 
 With a subdomain, SWAG's default site still answers requests for the host's bare IP, or any other
 hostname, with a placeholder page. To close those connections without a reply, add `return 444;`
@@ -173,11 +173,11 @@ configs: they're served from that default site.
 
 ## Behind another reverse proxy
 
-Set `TRUST_PROXY=true` only if ipMagnet can be reached **solely** through your proxy. The proxy must
+Set `TRUST_PROXY=true` only if ipMagnetize can be reached **solely** through your proxy. The proxy must
 set `X-Real-IP` to the client's address and overwrite any value the client sent. In nginx:
 `proxy_set_header X-Real-IP $remote_addr;`.
 
-ipMagnet uses the header only when all of these hold:
+ipMagnetize uses the header only when all of these hold:
 
 * `TRUST_PROXY` is `true`.
 * The connection comes from a private or loopback address.
@@ -189,15 +189,15 @@ fake entries to it. That differs from upstream's reverse-proxy advice, which doe
 ## Firewalls
 
 Host firewalls such as UFW and firewalld don't filter ports that Docker publishes. Docker inserts its
-own iptables rules ahead of theirs, so `ufw status` can list only SSH while ipMagnet's port 80, or
+own iptables rules ahead of theirs, so `ufw status` can list only SSH while ipMagnetize's port 80, or
 SWAG's 80 and 443, are open to the internet. To restrict them, either:
 
 * Use a firewall in front of the host, such as a DigitalOcean Cloud Firewall or an AWS security group.
   Docker can't bypass it.
 * Add rules to Docker's `DOCKER-USER` iptables chain, which Docker checks before its own rules.
 
-With the SWAG setup, `IPMAGNET_BIND=127.0.0.1` keeps ipMagnet's own port off the network whatever
-the firewall rules are.
+With the SWAG setup, `IPMAGNETIZE_BIND=127.0.0.1` keeps ipMagnetize's own port off the network
+whatever the firewall rules are.
 
 ## Updating
 
@@ -218,12 +218,46 @@ by the commands above) or when you set `SWAG_VERSION` in `.env` to a tag from
 
 ## Data and backups
 
-Hits are stored in SQLite at `/var/www/data/ipmagnet.db3`, in the `ipmagnet-data` volume. To copy it
-out:
+Hits are stored in SQLite at `/var/www/data/ipmagnetize.db3`, in the `ipmagnetize-data` volume. To
+copy it out:
 
 ```bash
-docker compose cp ipmagnet:/var/www/data/ipmagnet.db3 ./ipmagnet-backup.db3
+docker compose cp ipmagnetize:/var/www/data/ipmagnetize.db3 ./ipmagnetize-backup.db3
 ```
 
 You can bind-mount a host directory at `/var/www/data` instead. The container fixes its ownership at
 startup. For users' privacy, upstream recommends wiping the database regularly.
+
+## Moving an install from the old names
+
+Until October 2026 this fork used `ipmagnet` for the Compose service, its volume, the `IPMAGNET_*`
+settings and SWAG's subdomain. After pulling the rename, an existing install starts with an empty
+database unless you move it across:
+
+1. In `.env`, rename `IPMAGNET_BIND`, `IPMAGNET_PORT` and `IPMAGNET_MEM_LIMIT` to `IPMAGNETIZE_BIND`,
+   `IPMAGNETIZE_PORT` and `IPMAGNETIZE_MEM_LIMIT`. In `docker-compose.override.yml`, rename the
+   `ipmagnet:` service to `ipmagnetize:` and point `TRACKER_URL` at the new hostname.
+2. Remove the old containers (`--remove-orphans` catches the old `ipmagnet` one, which the compose
+   files no longer name), create the new ones without starting them, and copy the database:
+
+   ```bash
+   docker compose down --remove-orphans
+   docker compose up --no-start --build
+   docker run --rm -v <project>_ipmagnet-data:/from:ro -v <project>_ipmagnetize-data:/to \
+     alpine cp /from/ipmagnet.db3 /to/ipmagnetize.db3
+   ```
+
+   `<project>` is the Compose project name, by default the checkout's directory name. `docker volume
+   ls` lists both volumes.
+3. With SWAG, swap the proxy config, then start everything:
+
+   ```bash
+   rm swag-config/nginx/proxy-confs/ipmagnet.subdomain.conf
+   cp swag-templates/ipmagnetize.subdomain.conf.sample swag-config/nginx/proxy-confs/ipmagnetize.subdomain.conf
+   docker compose up -d
+   ```
+
+   SWAG requests a certificate for `ipmagnetize.<your domain>` as it starts, so create that DNS record
+   first. Magnet links handed out before the move still announce to the old hostname.
+
+The old volume stays until you remove it with `docker volume rm`.

@@ -1,6 +1,6 @@
 <?php
-	$TRACKER=urlencode("http://localhost:80/ipmagnet/"); //Remember to include the trailing slash here!
-	$db = new PDO("sqlite:ipmagnet.db3");
+	$TRACKER=urlencode("http://localhost:80/ipmagnetize/"); //Remember to include the trailing slash here!
+	$db = new PDO("sqlite:ipmagnetize.db3");
 	$enableInterval=false;
 	$trackerInterval=300;
 	$trustProxy=false; //set to true only when running behind your own reverse proxy that sets X-Real-IP
@@ -18,7 +18,7 @@
 
 	//behind a reverse proxy, REMOTE_ADDR is the proxy's own address; use the client IP it
 	//forwarded instead. Requiring a private peer as well guards against the header being
-	//trusted if ipMagnet's port is accidentally exposed directly.
+	//trusted if ipMagnetize's port is accidentally exposed directly.
 	$REMOTE_ADDR = $_SERVER["REMOTE_ADDR"];
 	if($trustProxy && is_trusted_proxy($REMOTE_ADDR) && filter_var($_SERVER["HTTP_X_REAL_IP"] ?? "", FILTER_VALIDATE_IP) !== FALSE){
 		$REMOTE_ADDR = $_SERVER["HTTP_X_REAL_IP"];
@@ -143,15 +143,15 @@
 	<head>
 		<title>ipMagnetize</title>
 		<link rel="icon" href="static/favicon.png" type="image/x-icon" />
-		<link rel="stylesheet" type="text/css" href="static/ipmagnet.css" />
+		<link rel="stylesheet" type="text/css" href="static/ipmagnetize.css" />
 		<script type="text/javascript" src="static/ajax.js"></script>
-		<script type="text/javascript" src="static/ipmagnet.js"></script>
+		<script type="text/javascript" src="static/ipmagnetize.js"></script>
 		<meta name="robots" content="noindex,nofollow" />
 		<noscript>
 			<meta http-equiv="refresh" content="60; url=?hash=<?php print($HASH); ?>" />
 		</noscript>
 	</head>
-	<body onload="ipmagnet.init('<?php print($HASH); ?>');">
+	<body onload="ipmagnetize.init('<?php print($HASH); ?>');">
 		<div id="title-wrap">
 			<h1>ipMagnetize</h1>
 		</div>
@@ -160,7 +160,7 @@
 				<div id="mission-statement">
 					ipMagnetize allows you to see which IP address your BitTorrent Client is handing out to its peers and trackers!
 				</div>
-				Add this <a href="magnet:?xt=urn:btih:<?php print($HASH); ?>&amp;dn=ipMagnet+Tracking+Link&amp;tr=<?php print($TRACKER); ?>">Magnet link</a> to your 
+				Add this <a href="magnet:?xt=urn:btih:<?php print($HASH); ?>&amp;dn=ipMagnetize+Tracking+Link&amp;tr=<?php print($TRACKER); ?>">Magnet link</a> to your 
 				downloads and watch this page.<br/>
 				FYI, the address you've accessed this page with is <span id="remote-ip"><?php print(htmlentities($REMOTE_ADDR, ENT_QUOTES)); ?></span>
 				<div id="current-connections">
