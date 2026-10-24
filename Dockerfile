@@ -26,6 +26,13 @@ RUN mkdir -p /var/www/data \
 	&& chmod 755 /var/www/html \
 	&& chown www-data:www-data /var/www/data
 
+# Defaults for the settings docker-entrypoint.sh applies, so `docker run`
+# without any -e gives the same instance as docker-compose.yml.
+ENV TRACKER_URL="http://localhost/" \
+	ENABLE_INTERVAL="false" \
+	TRACKER_INTERVAL="300" \
+	TRUST_PROXY="false"
+
 VOLUME ["/var/www/data"]
 
 ENTRYPOINT ["docker-entrypoint.sh"]
