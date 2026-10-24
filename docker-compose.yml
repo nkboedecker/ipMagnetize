@@ -1,5 +1,9 @@
 services:
   ipmagnetize:
+    # The published image; `docker compose up --build` builds it from this
+    # checkout instead. Set IPMAGNETIZE_VERSION in .env to run another tag -
+    # see "Image tags" in README.md.
+    image: ghcr.io/nkboedecker/ipmagnetize:${IPMAGNETIZE_VERSION:-1}
     build: .
     ports:
       # Override with IPMAGNETIZE_BIND/IPMAGNETIZE_PORT (e.g. via .env) to restrict

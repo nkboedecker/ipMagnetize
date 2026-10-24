@@ -7,7 +7,8 @@ privacy notes, and manual (non-Docker) setup.
 
 This fork adds:
 
-* A Docker image configured through environment variables.
+* A Docker image configured through environment variables, published at
+  `ghcr.io/nkboedecker/ipmagnetize` for `linux/amd64` and `linux/arm64`.
 * An optional HTTPS setup using [SWAG](https://github.com/linuxserver/docker-swag) with Let's Encrypt
   certificates.
 * Correct client IP detection behind a reverse proxy (`TRUST_PROXY`).
@@ -19,8 +20,11 @@ This fork adds:
 From a checkout of this repository:
 
 ```bash
-docker compose up -d --build
+docker compose up -d
 ```
+
+This runs the published image (see [Image tags](#image-tags)). To build the image from your checkout
+instead, add `--build`.
 
 ipMagnetize is now on http://localhost/. Before exposing it publicly, set `TRACKER_URL` to the address
 BitTorrent clients will reach it at (see [Configuration](#configuration)), or the magnet links it
@@ -39,6 +43,7 @@ generates will point clients at `localhost`.
 | `IPMAGNETIZE_BIND` | `0.0.0.0` | `.env` | Host address ipMagnetize's port is published on. |
 | `IPMAGNETIZE_PORT` | `80` | `.env` | Host port ipMagnetize is published on. |
 | `IPMAGNETIZE_MEM_LIMIT` | `256m` | `.env` | Memory cap for the ipMagnetize container. It idles around 20 MB. |
+| `IPMAGNETIZE_VERSION` | `1` | `.env` | Tag of the published image to run. See [Image tags](#image-tags). |
 | `SWAG_URL` | *(required for SWAG)* | `.env` | Your registered domain, e.g. `example.com`. |
 | `SWAG_EMAIL` | *(required for SWAG)* | `.env` | Contact address for Let's Encrypt. |
 | `SWAG_TZ` | `Etc/UTC` | `.env` | Time zone for the SWAG container. |
@@ -73,12 +78,16 @@ Don't edit `docker-compose.yml`. Your changes would conflict with (or be overwri
 ## Running without Compose
 
 ```bash
-docker build -t ipmagnetize .
 docker run -d -p 80:80 \
   -e TRACKER_URL="https://ipmagnetize.example.com/" \
   -v ipmagnetize-data:/var/www/data \
-  ipmagnetize
+  ghcr.io/nkboedecker/ipmagnetize:1
 ```
+
+The settings marked "override file" above become `-e` options. `docker-compose.yml` also sets a memory
+cap, a process limit, `no-new-privileges` and log rotation; add the matching `docker run` options if you
+want them. To run your own build, `docker build -t ipmagnetize .` in a checkout, and use `ipmagnetize`
+as the image name.
 
 ## HTTPS with SWAG (optional)
 
@@ -138,7 +147,7 @@ existing SWAG's `nginx/proxy-confs/`, put ipMagnetize on the same Docker network
 4. Start everything, then watch SWAG obtain its certificate. Wait for `Server ready`:
 
    ```bash
-   docker compose up -d --build
+   docker compose up -d
    docker compose logs -f swag
    ```
 
@@ -203,18 +212,57 @@ whatever the firewall rules are.
 
 ```bash
 git pull
-docker compose build --pull
+docker compose pull
 docker compose up -d
 ```
 
-The app's code is built into the image, so restarting without rebuilding keeps running the old
-version. `--pull` also fetches the newest `php:8.4-apache` base image, which is how PHP and Debian
-security fixes reach the container, so run these regularly even when there's nothing to pull from
-git. Your `.env` and override file aren't touched by `git pull`.
+`docker compose up -d` alone keeps running the image you already have. The published image is rebuilt
+every week on the newest `php:8.4-apache`, which is how PHP and Debian security fixes reach the
+container, so run these regularly even when there's nothing to pull from git. Your `.env` and override
+file aren't touched by `git pull`.
+
+If you build from your checkout, run `docker compose build --pull` in place of `docker compose pull`:
+the app's code is built into the image, and `--pull` fetches the newest base image. Your build takes
+the published image's name, so a later `docker compose pull` replaces it with the published one.
 
 SWAG is pinned to a tested release, so it only changes when this repository moves the pin (picked up
 by the commands above) or when you set `SWAG_VERSION` in `.env` to a tag from
 [SWAG's releases](https://github.com/linuxserver/docker-swag/releases) and run `docker compose up -d`.
+
+## Image tags
+
+`ghcr.io/nkboedecker/ipmagnetize` has these tags. Set `IPMAGNETIZE_VERSION` in `.env` to choose one.
+
+| Tag | What it is |
+|---|---|
+| `1.2.3` | That release. |
+| `1.2` | The newest 1.2.x release. |
+| `1` | The newest 1.x release. `docker-compose.yml` uses this one unless you choose another. |
+| `latest` | The newest release. |
+| `edge` | The current `master` branch, which may not be released yet. |
+
+Every week the newest release is rebuilt on the newest `php:8.4-apache`, and its tags are moved to the
+rebuild, so the image behind a tag changes even without a new release. Only the newest release is
+rebuilt: once 1.3.0 is out, `1.2` stops getting security fixes.
+
+## Releasing
+
+From `master`, tag the release and push the tag:
+
+```bash
+git tag -a v1.2.3 -m "ipMagnetize 1.2.3"
+git push origin v1.2.3
+```
+
+The *Docker image* workflow builds the tag for both platforms, runs `test/smoke-test.sh` against it,
+and publishes it. Before a new major version, change the `IPMAGNETIZE_VERSION` default in
+`docker-compose.yml` to the new major version in the commit you tag. To test an image locally, build
+it and run `sh test/smoke-test.sh <image>`.
+
+GitHub makes a new package private. After the first release, make it public: open the package from the
+repository's **Packages** list, then **Package settings**, and **Change visibility** under *Danger Zone*. GitHub also pauses
+scheduled workflows in a repository with no activity for 60 days, which stops the weekly rebuilds. Its
+**Actions** tab offers to turn the workflow back on.
 
 ## Data and backups
 

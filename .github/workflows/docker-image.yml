@@ -1,0 +1,157 @@
+# Written by Claude Code (Anthropic).
+#
+# Builds and smoke-tests the image on every pull request and push, and
+# publishes it to ghcr.io/<owner>/ipmagnetize for linux/amd64 and linux/arm64:
+#
+# * A push to master publishes `edge`.
+# * A pushed tag vX.Y.Z publishes X.Y.Z, X.Y and X, and `latest` if it's the
+#   newest release. A pre-release tag (v2.0.0-rc.1) publishes only itself.
+# * Every Monday, and when run by hand, the newest release is rebuilt on the
+#   newest php:8.4-apache and its tags moved to the rebuild, so PHP and Debian
+#   security fixes reach users without a new release.
+
+name: Docker image
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*.*.*"]
+  pull_request:
+  schedule:
+    - cron: "17 5 * * 1"
+      timezone: America/New_York
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      build: ${{ steps.plan.outputs.build }}
+      ref: ${{ steps.plan.outputs.ref }}
+      version: ${{ steps.plan.outputs.version }}
+      latest: ${{ steps.plan.outputs.latest }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          # The newest release is the highest vX.Y.Z tag; pre-releases don't count
+          releases=$(git tag --list --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true)
+          newest=${releases%%$'\n'*}
+
+          build=true ref= version=
+          case "$EVENT" in
+            schedule|workflow_dispatch)
+              if [ -z "$newest" ]; then
+                echo "::notice::There is no release to rebuild yet."
+                build=false
+              fi
+              ref=$newest version=$newest
+              ;;
+            push)
+              if [ "$GITHUB_REF_TYPE" = tag ]; then
+                version=$GITHUB_REF_NAME
+              fi
+              ;;
+          esac
+
+          latest=false
+          if [ -n "$version" ] && [ "$version" = "$newest" ]; then
+            latest=true
+          fi
+
+          {
+            echo "build=$build"
+            echo "ref=$ref"
+            echo "version=$version"
+            echo "latest=$latest"
+          } >> "$GITHUB_OUTPUT"
+          echo "Event $EVENT: build=$build ref=${ref:-default} version=${version:-none} latest=$latest"
+
+  image:
+    needs: plan
+    if: needs.plan.outputs.build == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # An empty ref checks out the event's own commit
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.plan.outputs.ref }}
+
+      - id: commit
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # Every build starts from a fresh runner with no layer cache, and `pull`
+      # fetches the newest base image, so nothing stale is carried over.
+      - name: Build for the smoke test
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64
+          pull: true
+          load: true
+          tags: ipmagnetize:smoke-test
+
+      - name: Smoke test
+        run: sh test/smoke-test.sh ipmagnetize:smoke-test
+
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        if: github.event_name != 'pull_request'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        env:
+          # GHCR reads a multi-platform image's description from the index
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/ipmagnetize
+          flavor: latest=false
+          tags: |
+            type=semver,pattern={{version}},value=${{ needs.plan.outputs.version }},enable=${{ needs.plan.outputs.version != '' }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.plan.outputs.version }},enable=${{ needs.plan.outputs.version != '' }}
+            type=semver,pattern={{major}},value=${{ needs.plan.outputs.version }},enable=${{ needs.plan.outputs.version != '' }}
+            type=raw,value=latest,enable=${{ needs.plan.outputs.latest == 'true' }}
+            type=edge,branch=master,enable=${{ github.event_name == 'push' }}
+            type=ref,event=pr
+          # A scheduled rebuild runs on master but builds a release, so the
+          # revision is the commit actually checked out.
+          labels: |
+            org.opencontainers.image.title=ipMagnetize
+            org.opencontainers.image.description=Shows which IP addresses a BitTorrent client hands out to trackers. A fork of ipMagnet.
+            org.opencontainers.image.licenses=WTFPL
+            org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
+          annotations: |
+            org.opencontainers.image.title=ipMagnetize
+            org.opencontainers.image.description=Shows which IP addresses a BitTorrent client hands out to trackers. A fork of ipMagnet.
+            org.opencontainers.image.licenses=WTFPL
+            org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
+
+      - name: Build for all platforms and publish
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          pull: true
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          annotations: ${{ steps.meta.outputs.annotations }}
