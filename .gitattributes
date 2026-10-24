@@ -1,2 +1,3 @@
 docker-entrypoint.sh text eol=lf
 Dockerfile text eol=lf
+test/smoke-test.sh text eol=lf

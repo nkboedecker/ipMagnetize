@@ -1,0 +1,13 @@
+# Written by Claude Code (Anthropic).
+#
+# The release workflow pins each action to a commit. This keeps those pins
+# current, with at most one pull request a month for all of them.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]

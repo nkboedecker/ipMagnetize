@@ -6,3 +6,6 @@ TODO
 *.env
 docker-compose.override.yml
 swag-config/
+.claude
+.github
+test/
