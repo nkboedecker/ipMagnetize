@@ -255,7 +255,8 @@ git push origin v1.2.3
 ```
 
 The *Docker image* workflow builds the tag for both platforms, runs `test/smoke-test.sh` against it,
-and publishes it. Before a new major version, change the `IPMAGNETIZE_VERSION` default in
+and publishes it, then creates the release page on GitHub with the tag's message as its notes, so write
+the message for readers. Before a new major version, change the `IPMAGNETIZE_VERSION` default in
 `docker-compose.yml` to the new major version in the commit you tag. To test an image locally, build
 it and run `sh test/smoke-test.sh <image>`.
 

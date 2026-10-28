@@ -9,6 +9,8 @@
 # * Every Monday, and when run by hand, the newest release is rebuilt on the
 #   newest php:8.4-apache and its tags moved to the rebuild, so PHP and Debian
 #   security fixes reach users without a new release.
+# * A pushed tag also gets a GitHub release page, once its image is published,
+#   with the tag's message as the notes.
 
 name: Docker image
 
@@ -155,3 +157,41 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
+
+  release:
+    needs: [plan, image]
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      # --notes-from-tag reads the tag's message from a local clone
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Create the release page
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          LATEST: ${{ needs.plan.outputs.latest }}
+        run: |
+          # A rerun of this workflow must not fail on a page that exists
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::notice::$TAG already has a release page."
+            exit 0
+          fi
+
+          args=(--verify-tag --notes-from-tag --title "ipMagnetize ${TAG#v}")
+          case "$TAG" in
+            *-*) args+=(--prerelease --latest=false) ;;
+            *)
+              if [ "$LATEST" = true ]; then
+                args+=(--latest)
+              else
+                args+=(--latest=false)
+              fi
+              ;;
+          esac
+          gh release create "$TAG" "${args[@]}"
