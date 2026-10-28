@@ -17,7 +17,7 @@ RUN apt-get update \
 
 WORKDIR /var/www/html
 
-COPY index.php COPYING.txt README.md ./
+COPY index.php LICENSE README.md ./
 COPY static/ ./static/
 COPY docker-entrypoint.sh /usr/local/bin/
 
