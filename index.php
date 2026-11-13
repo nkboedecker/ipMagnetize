@@ -27,6 +27,11 @@
 	//BitTorrent clients will submit the info_hash parameter when requesting the magnet link
 	if(isset($_GET["info_hash"])){
 
+		//reject array-valued parameters (e.g. info_hash[]=), which would crash bin2hex()
+		if(!is_string($_GET["info_hash"])){
+			exit("d14:failure reason15:Invalid requeste");
+		}
+
 		//prepare the insert query
 		$query="INSERT INTO hits (hash, timestamp, addr, agent) VALUES (:hash, :timestamp, :addr, :agent)";
 		$stmt=$db->prepare($query);
@@ -56,7 +61,8 @@
 				":agent" => htmlentities($_SERVER["HTTP_USER_AGENT"] ?? "", ENT_QUOTES)
 			)
 		))){
-			//failed to insert.
+			//the write failed; report it to the client instead of a normal reply
+			exit("d14:failure reason16:Database failuree");
 		}
 
 		$stmt->closeCursor();
