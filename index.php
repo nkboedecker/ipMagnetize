@@ -201,8 +201,6 @@
 				<span id="meta-footer">
 					Proudly run without ads or web tracking. Set up your own with the
 					<a href="https://github.com/nkboedecker/ipMagnetize">[source]</a>
-					<a href="http://www.kopimi.com/kopimi/"><img src="static/kopimi.png" alt="kopimi"/></a>
-					<a href="http://wtfpl.net/"><img src="static/wtfpl.png" alt="wtfpl"/></a>
 				</span>
 			</div>
 		</div>

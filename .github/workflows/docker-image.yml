@@ -139,12 +139,12 @@ jobs:
           labels: |
             org.opencontainers.image.title=ipMagnetize
             org.opencontainers.image.description=Shows which IP addresses a BitTorrent client hands out to trackers. A fork of ipMagnet.
-            org.opencontainers.image.licenses=WTFPL
+            org.opencontainers.image.licenses=GPL-3.0-or-later
             org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
           annotations: |
             org.opencontainers.image.title=ipMagnetize
             org.opencontainers.image.description=Shows which IP addresses a BitTorrent client hands out to trackers. A fork of ipMagnet.
-            org.opencontainers.image.licenses=WTFPL
+            org.opencontainers.image.licenses=GPL-3.0-or-later
             org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
 
       - name: Build for all platforms and publish
